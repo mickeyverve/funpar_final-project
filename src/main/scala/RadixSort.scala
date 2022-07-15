@@ -1,5 +1,6 @@
 import scala.collection.mutable
 import scala.collection.mutable.ArraySeq
+import scala.compiletime.ops.double.{%, /}
 import scala.concurrent.{Await, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
@@ -11,6 +12,7 @@ object RadixSort extends App {
     private val count: mutable.ArraySeq[Int] = Array.ofDim[Int](n)
 
     def increment(index: Int): Unit = this.synchronized { this.count(index) += 1 }
+    def decrement(index: Int): Unit = this.synchronized { this.count(index) -= 1 }
     def getElt(index: Int): Int = this.synchronized { this.count(index) }
     def get(): Vector[Int] = this.synchronized { this.count.toVector }
   }
@@ -30,25 +32,25 @@ object RadixSort extends App {
     val count = par_count(array, n, place)
     val output = Vector.range(0, n)
 
-    println(count.scanLeft(0)((s,x) => s + x))
-    count
+    val sumCount = count.scanLeft(0)((s,x) => s + x)
+    par_place()
+
 
   }
 
-  def par_place(count: Counter, output: Counter, n: Int, place: Int): Vector[Int] = {
+  def par_place(count: Vector[Int], output: Counter, n: Int, place: Int): Vector[Int] = {
     val NUM_GROUPS = 2048
-    val groups = count.get().grouped(NUM_GROUPS).toVector
+    val groups = count.grouped(NUM_GROUPS).toVector
     val units = groups.map(rng => Future {
-      for (elem <- rng) {
-        output.get()[count.getElt((elem / place) % 10) - 1] = elem
-        count.
+      for (elem: Int <- rng) {
+        output.get().updated(count[(elem / place) % 10] - 1, elem)
+        count[(elem / place) % 10] -= 1
       }
     })
     val flattened = Future.sequence(units)
 
     Await.result(flattened, Duration.Inf)
-    /* */
-    count.get()
+    output.get()
   }
 
   def par_count(array: Vector[Int], n: Int, place: Int): Vector[Int] = {
@@ -62,7 +64,6 @@ object RadixSort extends App {
     val flattened = Future.sequence(units)
 
     Await.result(flattened, Duration.Inf)
-    /* */
     count.get()
   }
 
