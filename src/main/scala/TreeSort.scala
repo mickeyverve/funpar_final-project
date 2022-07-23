@@ -17,7 +17,7 @@ object TreeSort extends App {
   def treeSortSeq(arr: Vector[Int]): Vector[Int] = {
 
     // Creates a binary search tree from list of strings
-    def construct(arr: Vector[Int]): Node = {
+    def createTree(arr: Vector[Int]): Node = {
       def insert(tree: Node, value: Int): Node = {
         tree match {
           case null => LeafNode(value)
@@ -53,7 +53,7 @@ object TreeSort extends App {
       tree
     }
 
-    def sortedRender(A: Node): Vector[Int] = {
+    def sort(A: Node): Vector[Int] = {
       A match {
         case null => {
           Vector()
@@ -62,22 +62,18 @@ object TreeSort extends App {
           Vector(data)
         }
         case FullNode(data, left, right) => {
-          sortedRender(left) ++
-            Vector(data) ++
-            sortedRender(right)
+          sort(left) ++ Vector(data) ++ sort(right)
         }
         case RightNode(data, right) => {
-            Vector(data) ++
-            sortedRender(right)
+            Vector(data) ++ sort(right)
         }
         case LeftNode(data, left) => {
-          sortedRender(left) ++
-            Vector(data)
+          sort(left) ++ Vector(data)
         }
       }
     }
 
-    sortedRender(construct(arr))
+    sort(createTree(arr))
   }
 
 
@@ -85,7 +81,7 @@ object TreeSort extends App {
   def treeSortPar(arr: Vector[Int]): Vector[Int] = {
 
     // Creates a binary search tree from list of strings
-    def construct(arr: Vector[Int]): Node = {
+    def createTree(arr: Vector[Int]): Node = {
       def insert(tree: Node, value: Int): Node = {
         tree match {
           case null => LeafNode(value)
@@ -121,7 +117,7 @@ object TreeSort extends App {
       tree
     }
 
-    def sortedRender(A: Node): Vector[Int] = {
+    def sort(A: Node): Vector[Int] = {
       A match {
         case null => {
           Vector()
@@ -130,37 +126,31 @@ object TreeSort extends App {
           Vector(data)
         }
         case FullNode(data, left, right) => {
-          val futures = Vector(Future{ sortedRender(left) }, Future{ sortedRender(right) })
+          val futures = Vector(Future{ sort(left) }, Future{ sort(right) })
           val flattened = Future.sequence(futures)
           val result = Await.result(flattened, Duration.Inf)
           (result(0) :+ data) ++ result(1)
         }
         case RightNode(data, right) => {
-          Vector(data) ++
-            sortedRender(right)
+          Vector(data) ++ sort(right)
         }
         case LeftNode(data, left) => {
-          sortedRender(left) ++
-            Vector(data)
+          sort(left) ++ Vector(data)
         }
       }
     }
 
-    sortedRender(construct(arr))
+    sort(createTree(arr))
   }
 
-  def timed[A](f: => A): (A, Double) = {
+  def timed[A](f: => A): Double = {
     val start = System.nanoTime
     val res = f
     val stop = System.nanoTime
-    (res, (stop - start)/1e9)
+    (stop - start)/1e9
   }
 
-  val arr = Range(1001, 0, -1)
-
+  val arr = Range(3000, 0, -1)
   println(timed(treeSortSeq(arr.toVector)))
-
-  val arr1 = Range(1001, 0, -1)
-
-  println(timed(treeSortPar(arr1.toVector)))
+  println(timed(treeSortPar(arr.toVector)))
 }

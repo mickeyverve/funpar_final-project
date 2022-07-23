@@ -5,28 +5,18 @@ import scala.util.Success
 
 object QuickSort extends App {
 
-  def timed[A](f: => A): (A, Double) = {
-    val start = System.nanoTime
-    val res = f
-    val stop = System.nanoTime
-    (res, (stop - start)/1e9)
-  }
-
-  val r = scala.util.Random
-  val randomArray = (for (i <- 1 to 10000000) yield r.nextInt(10000)).toArray
-
-  def quickSort(xs: Array[Int]): Array[Int] = {
+  def quickSortSeq(xs: Array[Int]): Array[Int] = {
     if (xs.length <= 1) xs
     else {
       val pivot = xs(xs.length / 2)
       Array.concat(
-        quickSort(xs.filter(_ < pivot)),
+        quickSortSeq(xs.filter(_ < pivot)),
         xs.filter(_ == pivot),
-        quickSort(xs.filter(_ > pivot)))
+        quickSortSeq(xs.filter(_ > pivot)))
     }
   }
 
-  def parQuickSort(xs: Array[Int]): Future[Array[Int]] = {
+  def quickSortPar(xs: Array[Int]): Future[Array[Int]] = {
     if (xs.length <= 1) Future { xs }
     else {
       val pivot = xs(xs.length / 2)
@@ -34,7 +24,7 @@ object QuickSort extends App {
       val n = xs.length
 
       val groups = xs.grouped(n / NUM_GROUPS).toVector
-      val lt = groups.map(rng => Future { quickSort(rng.filter(_ < pivot)) })
+      val lt = groups.map(rng => Future { quickSortSeq(rng.filter(_ < pivot)) })
       val lt_flat = Future.sequence(lt)
 
       val groups2 = xs.grouped(n / NUM_GROUPS).toVector
@@ -42,7 +32,7 @@ object QuickSort extends App {
       val eq_flat = Future.sequence(eq)
 
       val groups3 = xs.grouped(n / NUM_GROUPS).toVector
-      val gt = groups3.map(rng => Future{ quickSort(rng.filter(_ > pivot)) })
+      val gt = groups3.map(rng => Future{ quickSortSeq(rng.filter(_ > pivot)) })
       val gt_flat = Future.sequence(gt)
 
       for (
@@ -54,8 +44,18 @@ object QuickSort extends App {
     }
   }
 
-  //println(timed(quickSort(randomArray).mkString(", ")))
-  println(timed(Await.result(parQuickSort(randomArray), Duration.Inf).mkString(", ")))
+  def timed[A](f: => A): Double = {
+    val start = System.nanoTime
+    val res = f
+    val stop = System.nanoTime
+    (stop - start)/1e9
+  }
+
+  val r = scala.util.Random
+  val randomArray = (for (i <- 1 to 10000000) yield r.nextInt(10000)).toArray
+
+  println(timed(quickSortSeq(randomArray).mkString(", ")))
+  println(timed(Await.result(quickSortPar(randomArray), Duration.Inf).mkString(", ")))
 
 
 }

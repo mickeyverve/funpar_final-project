@@ -6,7 +6,7 @@ import scala.concurrent.duration.Duration
 import scala.util.Success
 
 object InsertionSort extends App {
-  
+
   def insertionSortSeq(array: Vector[Int]): Vector[Int] = {
     var key = 0
     var j = 0
@@ -85,7 +85,7 @@ object InsertionSort extends App {
         val leftM = mutLeft.length / 2
         val rightM = right.length / 2
         val futures = Vector(Future{ merge(mutLeft.dropRight(leftM), mutRight.dropRight(rightM)) },
-          Future{ merge(mutLeft.drop(leftM + 1), mutRight.drop(rightM + 1)) })
+                            Future{ merge(mutLeft.drop(leftM + 1), mutRight.drop(rightM + 1)) })
         val flattened = Future.sequence(futures)
         val result = Await.result(flattened, Duration.Inf)
         merge(result(0), result(1))
@@ -94,7 +94,7 @@ object InsertionSort extends App {
     }
     sorted.reverse
   }
-  
+
   def timed[A](f: => A): (A, Double) = {
     val start = System.nanoTime
     val res = f
@@ -102,10 +102,8 @@ object InsertionSort extends App {
     (res, (stop - start)/1e9)
   }
 
-  val arr = Range(11,0,-1).toVector
+  val arr = Range(10,0,-1).toVector
+  println(timed(insertionSortSeq(arr)))
   println(timed(insertionSortPar(arr)))
-
-  val arr1 = Vector(234,234,234,23,23,23,345,56,24,24,45,35,56,56,345,24)
-  println(timed(insertionSortSeq(arr1)))
 
 }

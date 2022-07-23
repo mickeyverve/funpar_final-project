@@ -7,6 +7,33 @@ import scala.util.Success
 
 object RadixSort extends App {
 
+  def radixSortSeq(a: Array[Int], max_digits: Int): Array[Int] = {
+
+    def key(value: Int, digit: Int): Int = {
+      (value % (scala.math.pow(10, digit))).toInt / scala.math.pow(10, digit-1).toInt
+    }
+
+    var from = a
+    var to = new Array[Int](a.length)
+
+    for (digit <- 1 to max_digits) {
+      val count  = new Array[Int](10)
+      from.foreach( (e: Int) => count(key(e, digit)) += 1 )
+
+      for (i <- 1 until 10) {
+        count(i) += count(i-1)
+      }
+
+      for (e <- from.reverseIterator) {
+        count(key(e, digit)) -= 1
+        to(count(key(e, digit))) = e
+      }
+      from = to
+      to = new Array[Int](a.length)
+    }
+    from
+  }
+
   class MutArray(a: mutable.ArraySeq[Int]) {
     private val count: mutable.ArraySeq[Int] = a
 
@@ -21,7 +48,7 @@ object RadixSort extends App {
     def get(): Vector[Int] = this.synchronized { this.count.toVector }
   }
 
-  def radixSort(a: Vector[Int]): Vector[Int] = {
+  def radixSortPar(a: Vector[Int]): Vector[Int] = {
     val output = new MutArray(a.toArray)
     val max = a.max;
 
@@ -70,5 +97,14 @@ object RadixSort extends App {
     count.get()
   }
 
-  println(radixSort(Vector(45,23,12,11,64,31,1234, 231233,4234,23, 12, 3123, 131)))
+  def timed[A](f: => A): Double = {
+    val start = System.nanoTime
+    val res = f
+    val stop = System.nanoTime
+    (stop - start)/1e9
+  }
+
+  val arr = Range(1000000, 0, -1)
+  println(timed(radixSortSeq(arr.toArray, 7).toVector))
+  println(timed(radixSortPar(arr.toVector)))
 }
